@@ -8,7 +8,7 @@ const projects = [];
 let numeroRequisicoes = 0;
 
 server.use((req, res, next) => {
-  numeroRequisicoes = numeroRequisicoes + 1;
+  numeroRequisicoes++;
   console.time("Request");
   console.log(
     `Método: ${req.method}; URL: ${
@@ -22,10 +22,13 @@ server.use((req, res, next) => {
 });
 
 function checkProjectExist(req, res, next) {
-  const project = projects[req.params.id];
+  const { id } = req.params;
+  const project = projects.find(p => p.id === id);
+
   if (!project) {
-    return res.status(400).json({ error: "Project does not Exist" });
+    return res.status(400).json({ error: "Project not found" });
   }
+
   return next();
 }
 
@@ -34,32 +37,49 @@ server.get("/projects", (req, res) => {
 });
 
 server.post("/projects", (req, res) => {
-  projects.push(req.body);
-  return res.json(projects);
+  const { id, title } = req.body;
+
+  const project = {
+    id,
+    title,
+    tasks: []
+  };
+
+  projects.push(project);
+
+  return res.json(project);
 });
 
 server.put("/projects/:id", checkProjectExist, (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
 
-  projects[id].title = title;
-  return res.json(projects);
+  const project = projects.find(p => p.id === id);
+
+  project.title = title;
+
+  return res.json(project);
 });
 
 server.delete("/projects/:id", checkProjectExist, (req, res) => {
-  const { index } = req.params;
+  const { id } = req.params;
 
-  projects.splice(index, 1);
+  const projectIndex = projects.findIndex(p => p.id === id);
 
-  return res.json(projects);
+  projects.splice(projectIndex, 1);
+
+  return res.send();
 });
 
 server.post("/projects/:id/tasks", checkProjectExist, (req, res) => {
   const { id } = req.params;
-  const { task } = req.body;
+  const { title } = req.body;
 
-  projects[id]["task"].push(task);
-  return res.json(projects);
+  const project = projects.find(p => p.id === id);
+
+  project.tasks.push(title);
+
+  return res.json(project);
 });
 
 server.listen(3000);
